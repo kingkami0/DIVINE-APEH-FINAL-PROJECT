@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cloud E-Commerce REST API</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Sora:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0c10;
+      --surface:   #111520;
+      --border:    #1e2535;
+      --accent:    #00e5a0;
+      --accent2:   #3b7fff;
+      --danger:    #ff4f6d;
+      --warn:      #ffaa00;
+      --patch:     #a855f7;
+      --text:      #e8ecf4;
+      --muted:     #5a6480;
+      --mono:      'Space Mono', monospace;
+      --sans:      'Sora', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── GRID BACKGROUND ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,160,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,160,.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── GLOW ── */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,229,160,.12) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── WRAPPER ── */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10, 12, 16, .85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .nav-logo {
+      font-family: var(--mono);
+      font-size: .85rem;
+      color: var(--accent);
+      letter-spacing: .08em;
+    }
+    .nav-links { display: flex; gap: 32px; }
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: .875rem;
+      font-weight: 400;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 100px 24px 80px;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0,229,160,.08);
+      border: 1px solid rgba(0,229,160,.25);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-family: var(--mono);
+      font-size: .75rem;
+      color: var(--accent);
+      margin-bottom: 28px;
+      letter-spacing: .06em;
+    }
+    .hero-badge .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .5; transform: scale(.8); }
+    }
+    .hero h1 {
+      font-size: clamp(2.4rem, 6vw, 4.2rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -.03em;
+      margin-bottom: 20px;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p {
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 560px;
+      margin: 0 auto 40px;
+      font-weight: 300;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all .2s;
+      font-family: var(--sans);
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+      border: none;
+    }
+    .btn-primary:hover {
+      background: #00ffc0;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,229,160,.3);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    /* ── STATS ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 60px 0;
+    }
+    .stat {
+      background: var(--surface);
+      padding: 28px 24px;
+      text-align: center;
+    }
+    .stat-number {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--accent);
+      font-family: var(--mono);
+    }
+    .stat-label {
+      font-size: .8rem;
+      color: var(--muted);
+      margin-top: 4px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    /* ── SECTIONS ── */
+    section { margin: 80px 0; }
+    .section-header { margin-bottom: 32px; }
+    .section-tag {
+      font-family: var(--mono);
+      font-size: .72rem;
+      color: var(--accent);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .section-header h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: -.02em;
+    }
+    .section-header p {
+      color: var(--muted);
+      margin-top: 8px;
+      font-size: .95rem;
+    }
+
+    /* ── FEATURE CARDS ── */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      transition: border-color .2s, transform .2s;
+    }
+    .feature-card:hover {
+      border-color: rgba(0,229,160,.35);
+      transform: translateY(-3px);
+    }
+    .feature-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: rgba(0,229,160,.1);
+      border: 1px solid rgba(0,229,160,.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      margin-bottom: 16px;
+    }
+    .feature-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
+    .feature-card p { font-size: .875rem; color: var(--muted); }
+
+    /* ── ENDPOINTS TABLE ── */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .table-group-header {
+      padding: 12px 20px;
+      background: rgba(0,0,0,.3);
+      border-bottom: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: .72rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .table-group-header span { color: var(--accent); }
+    table { width: 100%; border-collapse: collapse; }
+    thead tr {
+      border-bottom: 1px solid var(--border);
+    }
+    thead th {
+      text-align: left;
+      padding: 12px 20px;
+      font-size: .72rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-family: var(--mono);
+    }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background .15s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,.02); }
+    td { padding: 14px 20px; font-size: .875rem; vertical-align: middle; }
+
+    /* method badges */
+    .method {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 5px;
+      font-family: var(--mono);
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      min-width: 58px;
+      text-align: center;
+    }
+    .GET    { background: rgba(59,127,255,.15); color: var(--accent2); border: 1px solid rgba(59,127,255,.3); }
+    .POST   { background: rgba(0,229,160,.1);   color: var(--accent);  border: 1px solid rgba(0,229,160,.25); }
+    .PUT    { background: rgba(255,170,0,.1);   color: var(--warn);    border: 1px solid rgba(255,170,0,.25); }
+    .PATCH  { background: rgba(168,85,247,.1);  color: var(--patch);   border: 1px solid rgba(168,85,247,.25); }
+    .DELETE { background: rgba(255,79,109,.1);  color: var(--danger);  border: 1px solid rgba(255,79,109,.25); }
+
+    /* path */
+    .path {
+      font-family: var(--mono);
+      font-size: .82rem;
+      color: var(--text);
+    }
+
+    /* auth badge */
+    .auth-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: .72rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: var(--mono);
+    }
+    .auth-yes { background: rgba(255,170,0,.08); color: var(--warn); border: 1px solid rgba(255,170,0,.2); }
+    .auth-no  { background: rgba(90,100,128,.1);  color: var(--muted); border: 1px solid rgba(90,100,128,.2); }
+
+    /* status code chips */
+    .status-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+    .chip {
+      font-family: var(--mono);
+      font-size: .68rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .chip-200 { background: rgba(0,229,160,.1); color: var(--accent); }
+    .chip-201 { background: rgba(59,127,255,.1); color: var(--accent2); }
+    .chip-204 { background: rgba(168,85,247,.1); color: var(--patch); }
+    .chip-400 { background: rgba(255,170,0,.1); color: var(--warn); }
+    .chip-401 { background: rgba(255,79,109,.1); color: var(--danger); }
+    .chip-404 { background: rgba(255,79,109,.1); color: var(--danger); }
+
+    /* ── HOW IT WORKS ── */
+    .steps { display: flex; flex-direction: column; gap: 0; }
+    .step {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 20px;
+      position: relative;
+    }
+    .step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 24px;
+      top: 48px;
+      bottom: 0;
+      width: 1px;
+      background: var(--border);
+    }
+    .step-num {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: rgba(0,229,160,.1);
+      border: 1px solid rgba(0,229,160,.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-size: .85rem;
+      color: var(--accent);
+      font-weight: 700;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .step-body { padding: 12px 0 40px; }
+    .step-body h3 { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
+    .step-body p { font-size: .875rem; color: var(--muted); }
+    .step-body code {
+      display: inline-block;
+      margin-top: 10px;
+      background: rgba(0,0,0,.4);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-family: var(--mono);
+      font-size: .78rem;
+      color: var(--accent);
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 24px;
+      position: relative;
+      z-index: 1;
+    }
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-left .logo { font-family: var(--mono); font-size: .85rem; color: var(--accent); margin-bottom: 6px; }
+    .footer-left p { font-size: .8rem; color: var(--muted); }
+    .footer-right { display: flex; gap: 16px; }
+    .footer-link {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: .85rem;
+      transition: color .2s;
+    }
+    .footer-link:hover { color: var(--accent); }
+
+    /* github icon */
+    .gh-icon { vertical-align: middle; margin-right: 6px; }
+
+    /* scroll reveal */
+    .reveal { opacity: 0; transform: translateY(20px); transition: opacity .5s, transform .5s; }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    @media (max-width: 600px) {
+      .nav-links { display: none; }
+      .hero { padding: 70px 16px 50px; }
+      td { padding: 12px 12px; }
+      thead th { padding: 10px 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo">// ECOMMERCE-API v1.0.0</div>
+    <div class="nav-links">
+      <a href="#about">About</a>
+      <a href="#endpoints">Endpoints</a>
+      <a href="#howto">Usage</a>
+      <a href="https://github.com/YOUR-USERNAME/ecommerce-api123" target="_blank">GitHub ↗</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge"><span class="dot"></span> LIVE · REST API · FastAPI · SQLite</div>
+  <h1>Cloud <span>E-Commerce</span><br/>REST API</h1>
+  <p>A fully layered, JWT-secured e-commerce backend built with FastAPI — featuring full CRUD, input validation, Swagger docs, and AWS S3 deployment.</p>
+  <div class="hero-actions">
+    <a href="#endpoints" class="btn btn-primary">View Endpoints ↓</a>
+    <a href="https://github.com/YOUR-USERNAME/ecommerce-api123" target="_blank" class="btn btn-ghost">
+      <svg class="gh-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      GitHub
+    </a>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- STATS -->
+  <div class="stats reveal" id="about">
+    <div class="stat"><div class="stat-number">11</div><div class="stat-label">Endpoints</div></div>
+    <div class="stat"><div class="stat-number">3</div><div class="stat-label">Entities</div></div>
+    <div class="stat"><div class="stat-number">JWT</div><div class="stat-label">Auth Method</div></div>
+    <div class="stat"><div class="stat-number">OAS 3.1</div><div class="stat-label">Swagger Docs</div></div>
+    <div class="stat"><div class="stat-number">AWS S3</div><div class="stat-label">Deployed On</div></div>
+  </div>
+
+  <!-- FEATURES -->
+  <section>
+    <div class="section-header reveal">
+      <div class="section-tag">// OVERVIEW</div>
+      <h2>What This API Does</h2>
+      <p>A production-grade cloud backend with a clean layered architecture (routers → services → models).</p>
+    </div>
+    <div class="features">
+      <div class="feature-card reveal">
+        <div class="feature-icon">🔐</div>
+        <h3>JWT Authentication</h3>
+        <p>Register and login to receive a Bearer token. All write operations and order endpoints are protected.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">📦</div>
+        <h3>Product Management</h3>
+        <p>Full CRUD for products with name, description, price, and real-time stock tracking.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">🛒</div>
+        <h3>Order Processing</h3>
+        <p>Place multi-item orders with atomic stock deduction and validation. Update status, cancel orders.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">✅</div>
+        <h3>Input Validation</h3>
+        <p>All inputs validated with Pydantic. Returns 400/404/422 with clear error messages.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">📄</div>
+        <h3>OpenAPI / Swagger</h3>
+        <p>Full Swagger UI at <code style="font-size:.8rem">/docs</code> with live testing and schema browser.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">☁️</div>
+        <h3>Cloud Deployed</h3>
+        <p>Static front-end hosted on AWS S3 with public access policy and static website hosting.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ENDPOINTS TABLE -->
+  <section id="endpoints">
+    <div class="section-header reveal">
+      <div class="section-tag">// ENDPOINTS</div>
+      <h2>API Reference</h2>
+      <p>Base URL: <code style="font-family:var(--mono);font-size:.85rem;color:var(--accent)">http://127.0.0.1:8000</code> &nbsp;|&nbsp; Interactive docs: <code style="font-family:var(--mono);font-size:.85rem;color:var(--accent)">/docs</code></p>
+    </div>
+
+    <div class="table-wrap reveal">
+
+      <!-- AUTH GROUP -->
+      <div class="table-group-header"><span>◆</span> AUTH</div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:80px">Method</th>
+            <th>Endpoint</th>
+            <th>Description</th>
+            <th>Auth Required</th>
+            <th>Status Codes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="method POST">POST</span></td>
+            <td class="path">/auth/register</td>
+            <td>Register a new user account</td>
+            <td><span class="auth-badge auth-no">Public</span></td>
+            <td><div class="status-chips"><span class="chip chip-201">201</span><span class="chip chip-400">400</span></div></td>
+          </tr>
+          <tr>
+            <td><span class="method POST">POST</span></td>
+            <td class="path">/auth/login</td>
+            <td>Login and receive a JWT Bearer token</td>
+            <td><span class="auth-badge auth-no">Public</span></td>
+            <td><div class="status-chips"><span class="chip chip-200">200</span><span class="chip chip-401">401</span></div></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- PRODUCTS GROUP -->
+      <div class="table-group-header"><span>◆</span> PRODUCTS</div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:80px">Method</th>
+            <th>Endpoint</th>
+            <th>Description</th>
+            <th>Auth Required</th>
+            <th>Status Codes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="method GET">GET</span></td>
+            <td class="path">/products/</td>
+            <td>List all products</td>
+            <td><span class="auth-badge auth-no">Public</span></td>
+            <td><div class="status-chips"><span class="chip chip-200">200</span></div></td>
+          </tr>
+          <tr>
+            <td><span class="method GET">GET</span></td>
+            <td class="path">/products/{id}</td>
+            <td>Get a single product by ID</td>
+            <td><span class="auth-badge auth-no">Public</span></td>
+            <td><div class="status-chips"><span class="chip chip-200">200</span><span class="chip chip-404">404</span></div></td>
+          </tr>
+          <tr>
+            <td><span class="method POST">POST</span></td>
+            <td class="path">/products/</td>
+            <td>Create a new product 🔒</td>
+            <td><span class="auth-badge auth-yes">🔒 JWT</span></td>
+            <td><div class="status-chips"><span class="chip chip-201">201</span><span class="chip chip-401">401</span><span class="chip chip-400">422</span></div></td>
+          </tr>
+          <tr>
+            <td><span class="method PUT">PUT</span></td>
+            <td class="path">/products/{id}</td>
+            <td>Update an existing product 🔒</td>
+            <td><span class="auth-badge auth-yes">🔒 JWT</span></td>
+            <td><div class="status-chips"><span class="chip chip-200">200</span><span class="chip chip-404">404</span><span class="chip chip-401">401</span></div></td>
+          </tr>
+          <tr>
+            <td><span class="method DELETE">DELETE</span></td>
+            <td class="path">/products/{id}</td>
+            <td>Delete a product 🔒</td>
+            <td><span class="auth-badge auth-yes">🔒 JWT</span></td>
+            <td><div class="status-chips"><span class="chip chip-204">204</span><span class="chip chip-404">404</span><span class="chip chip-401">401</span></div></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ORDERS GROUP -->
+      <div class="table-group-header"><span>◆</span> ORDERS</div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:80px">Method</th>
+            <th>Endpoint</th>
+            <th>Description</th>
+            <th>Auth Required</th>
+            <th>Status Codes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="method GET">GET</span></td>
+            <td class="path">/orders/</td>
+            <td>List all orders 🔒</td>
+            <td><span class="auth-badge auth-yes">🔒 JWT</span></td>
+            <td><div class="status-chips"><span class="chip chip-200">200</span><span class="chip chip-401">401</span></div></td>
+          </tr>
+          <tr>
+            <td><span class="method GET">GET</span></td>
+            <td class="path">/orders/{id}</td>
+            <td>Get a single order by ID 🔒</td>
+            <td><span class="auth-badge auth-yes">🔒 JWT</span></td>
+            <td><div class="status-chips"><span class="chip chip-200">200</span><span class="chip chip-404">404</span></div></td>
+          </tr>
+          <tr>
+            <td><span class="method POST">POST</span></td>
+            <td class="path">/orders/</td>
+            <td>Place a new order with stock check 🔒</td>
+            <td><span class="auth-badge auth-yes">🔒 JWT</span></td>
+            <td><div class="status-chips"><span class="chip chip-201">201</span><span class="chip chip-400">400</span><span class="chip chip-404">404</span></div></td>
+          </tr>
+          <tr>
+            <td><span class="method PATCH">PATCH</span></td>
+            <td class="path">/orders/{id}/status</td>
+            <td>Update order status (e.g. shipped) 🔒</td>
+            <td><span class="auth-badge auth-yes">🔒 JWT</span></td>
+            <td><div class="status-chips"><span class="chip chip-200">200</span><span class="chip chip-404">404</span></div></td>
+          </tr>
+          <tr>
+            <td><span class="method DELETE">DELETE</span></td>
+            <td class="path">/orders/{id}</td>
+            <td>Delete an order 🔒</td>
+            <td><span class="auth-badge auth-yes">🔒 JWT</span></td>
+            <td><div class="status-chips"><span class="chip chip-204">204</span><span class="chip chip-404">404</span></div></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- HEALTH GROUP -->
+      <div class="table-group-header"><span>◆</span> HEALTH</div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:80px">Method</th>
+            <th>Endpoint</th>
+            <th>Description</th>
+            <th>Auth Required</th>
+            <th>Status Codes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="method GET">GET</span></td>
+            <td class="path">/health</td>
+            <td>Server health check</td>
+            <td><span class="auth-badge auth-no">Public</span></td>
+            <td><div class="status-chips"><span class="chip chip-200">200</span></div></td>
+          </tr>
+          <tr>
+            <td><span class="method GET">GET</span></td>
+            <td class="path">/</td>
+            <td>Root — API info and docs link</td>
+            <td><span class="auth-badge auth-no">Public</span></td>
+            <td><div class="status-chips"><span class="chip chip-200">200</span></div></td>
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+  </section>
+
+  <!-- HOW TO USE -->
+  <section id="howto">
+    <div class="section-header reveal">
+      <div class="section-tag">// USAGE</div>
+      <h2>How to Use the API</h2>
+      <p>Get started in 3 steps using Swagger UI at <code style="font-family:var(--mono);font-size:.85rem;color:var(--accent)">/docs</code>.</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-num">01</div>
+        <div class="step-body">
+          <h3>Register an Account</h3>
+          <p>POST your email and password to <strong>/auth/register</strong>. An account will be created and returned.</p>
+          <code>POST /auth/register → { email, password }</code>
+        </div>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">02</div>
+        <div class="step-body">
+          <h3>Login and Get Your Token</h3>
+          <p>POST your credentials to <strong>/auth/login</strong>. Copy the <code style="font-family:var(--mono);color:var(--accent)">access_token</code> from the response.</p>
+          <code>POST /auth/login → { access_token, token_type }</code>
+        </div>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">03</div>
+        <div class="step-body">
+          <h3>Authorize and Call Protected Endpoints</h3>
+          <p>Click the <strong>Authorize 🔓</strong> button in Swagger, paste your token, then freely call all product and order endpoints.</p>
+          <code>Bearer {access_token} → unlocks 🔒 endpoints</code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /container -->
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-left">
+      <div class="logo">// CLOUD E-COMMERCE REST API</div>
+      <p>Built with FastAPI · SQLAlchemy · JWT · Deployed on AWS S3</p>
+      <p style="margin-top:4px">Divine Apeh Israel · Student No. 70488 · Introduction to Cloud Technologies</p>
+    </div>
+    <div class="footer-right">
+      <a class="footer-link" href="https://github.com/YOUR-USERNAME/ecommerce-api123" target="_blank">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:6px"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        View on GitHub
+      </a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // scroll reveal
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
